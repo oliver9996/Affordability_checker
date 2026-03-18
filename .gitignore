@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+.venv
+env/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data files (large – download separately)
+data/*.csv
+data/*.zip
+data/*.parquet
+
+# Trained models (reproducible from training script)
+models/*.pkl
+
+# OS
+.DS_Store
+Thumbs.db
