@@ -150,6 +150,7 @@ def cross_validate_pipeline(
         cv=cv_strategy,
         scoring=scoring,
         return_train_score=False,
+        error_score="raise",
     )
 
     results = {}

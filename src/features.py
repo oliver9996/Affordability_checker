@@ -155,9 +155,12 @@ class LeakageSafeFeaturizer(BaseEstimator, TransformerMixin):
         # from the IQR (IQR ≈ 1.35 × σ for a normal distribution).
         # This is a simple closed-form estimate; no future data is used.
         estimated_std = (out["price_75th"] - out["price_25th"]) / 1.35
-        z_score = (out["budget"] - out["median_price"]) / estimated_std.replace(
-            0, np.nan
-        )
+        safe_std = estimated_std.replace(0, np.nan)
+        z_score = (out["budget"] - out["median_price"]) / safe_std
+        # If spread is zero/undefined, fall back to a hard affordable/not-affordable signal.
+        fallback_z = np.where(out["budget"] >= out["median_price"], 8.0, -8.0)
+        z_score = np.where(np.isfinite(z_score), z_score, fallback_z)
+        z_score = np.clip(z_score, -60, 60)
         # Clamp to [0, 1] using a sigmoid approximation
         out["pct_within_budget"] = 1 / (1 + np.exp(-z_score))
 
@@ -176,7 +179,10 @@ class LeakageSafeFeaturizer(BaseEstimator, TransformerMixin):
             out["ratio_x_spread"] = 0.0
 
         # Return only model features (no target, no raw price columns)
-        return out[FEATURE_COLS].astype(float)
+        features = out[FEATURE_COLS].astype(float)
+        # Keep downstream models stable by removing any non-finite values.
+        features = features.replace([np.inf, -np.inf], np.nan).fillna(0.0)
+        return features
 
     # ------------------------------------------------------------------
     @staticmethod
